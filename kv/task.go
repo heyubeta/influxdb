@@ -10,7 +10,6 @@ import (
 	icontext "github.com/influxdata/influxdb/v2/context"
 	"github.com/influxdata/influxdb/v2/kit/feature"
 	"github.com/influxdata/influxdb/v2/resource"
-	"github.com/influxdata/influxdb/v2/task/options"
 	"go.uber.org/zap"
 )
 
@@ -674,7 +673,7 @@ func (s *Service) createTask(ctx context.Context, tx Tx, tc influxdb.TaskCreate)
 	// 	return nil, influxdb.ErrInvalidOwnerID
 	// }
 
-	opt, err := options.FromScript(s.FluxLanguageService, tc.Flux)
+	options, err := s.ExtractTaskOptions(ctx, s.FluxLanguageService, tc.Flux)
 	if err != nil {
 		return nil, influxdb.ErrTaskOptionParse(err)
 	}
@@ -691,19 +690,19 @@ func (s *Service) createTask(ctx context.Context, tx Tx, tc influxdb.TaskCreate)
 		Organization:    org.Name,
 		OwnerID:         tc.OwnerID,
 		Metadata:        tc.Metadata,
-		Name:            opt.Name,
+		Name:            options.Name,
 		Description:     tc.Description,
 		Status:          tc.Status,
 		Flux:            tc.Flux,
-		Every:           opt.Every.String(),
-		Cron:            opt.Cron,
+		Every:           options.Every.String(),
+		Cron:            options.Cron,
 		CreatedAt:       createdAt,
 		LatestCompleted: createdAt,
 		LatestScheduled: createdAt,
 	}
 
-	if opt.Offset != nil {
-		off, err := time.ParseDuration(opt.Offset.String())
+	if options.Offset != nil {
+		off, err := time.ParseDuration(options.Offset.String())
 		if err != nil {
 			return nil, influxdb.ErrTaskTimeParse(err)
 		}
@@ -830,7 +829,7 @@ func (s *Service) updateTask(ctx context.Context, tx Tx, id influxdb.ID, upd inf
 		}
 		task.Flux = *upd.Flux
 
-		options, err := options.FromScript(s.FluxLanguageService, *upd.Flux)
+		options, err := s.ExtractTaskOptions(ctx, s.FluxLanguageService, *upd.Flux)
 		if err != nil {
 			return nil, influxdb.ErrTaskOptionParse(err)
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/influxdata/influxdb/v2/resource"
 	"github.com/influxdata/influxdb/v2/resource/noop"
 	"github.com/influxdata/influxdb/v2/snowflake"
+	"github.com/influxdata/influxdb/v2/task/options"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +35,7 @@ type Service struct {
 	// If this is unset, operations that require parsing flux
 	// will fail.
 	FluxLanguageService influxdb.FluxLanguageService
+	ExtractTaskOptions  TaskOptionsExtractionFunc
 
 	// special ID generator that never returns bytes with backslash,
 	// comma, or space. Used to support very specific encoding of org &
@@ -55,6 +57,9 @@ type Service struct {
 
 	disableAuthorizationsForMaxPermissions func(context.Context) bool
 }
+
+// TaskOptionsExtractionFunc returns a set of task options from a given Flux script.
+type TaskOptionsExtractionFunc func(ctx context.Context, lang influxdb.FluxLanguageService, flux string) (options.Options, error)
 
 // NewService returns an instance of a Service.
 func NewService(log *zap.Logger, kv Store, configs ...ServiceConfig) *Service {
@@ -128,6 +133,7 @@ func NewService(log *zap.Logger, kv Store, configs ...ServiceConfig) *Service {
 		s.clock = clock.New()
 	}
 	s.FluxLanguageService = s.Config.FluxLanguageService
+	s.ExtractTaskOptions = s.Config.ExtractTaskOptions
 
 	return s
 }
@@ -138,6 +144,7 @@ type ServiceConfig struct {
 	Clock                         clock.Clock
 	URMByUserIndexReadPathEnabled bool
 	FluxLanguageService           influxdb.FluxLanguageService
+	ExtractTaskOptions            TaskOptionsExtractionFunc
 }
 
 // AutoMigrationStore is a Store which also describes whether or not
