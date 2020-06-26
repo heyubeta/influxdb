@@ -1,6 +1,7 @@
 // Libraries
 import React, {PureComponent} from 'react'
 import {connect} from 'react-redux'
+import {withRouter, WithRouterProps} from 'react-router'
 
 // Components
 import TimeMachineFluxEditor from 'src/timeMachine/components/TimeMachineFluxEditor'
@@ -32,7 +33,6 @@ import {
   getActiveQuery,
 } from 'src/timeMachine/selectors'
 import {getTimeRange} from 'src/dashboards/selectors'
-import {isInVEOMode} from 'src/shared/selectors/app'
 
 // Types
 import {
@@ -48,7 +48,6 @@ interface StateProps {
   timeRange: TimeRange
   autoRefresh: AutoRefresh
   isInCheckOverlay: boolean
-  inVEOMode: boolean
 }
 
 interface DispatchProps {
@@ -57,7 +56,7 @@ interface DispatchProps {
   onSetAutoRefresh: typeof setAutoRefresh
 }
 
-type Props = StateProps & DispatchProps
+type Props = StateProps & DispatchProps & WithRouterProps
 
 class TimeMachineQueries extends PureComponent<Props> {
   public render() {
@@ -97,12 +96,15 @@ class TimeMachineQueries extends PureComponent<Props> {
   private handleSetTimeRange = (timeRange: TimeRange) => {
     const {
       autoRefresh,
-      inVEOMode,
+      location: {pathname},
       onEnableUpdatedTimeRangeInVEO,
       onSetAutoRefresh,
       onSetTimeRange,
+      params: {cellID, dashboardID, orgID},
     } = this.props
 
+    const inVEOMode =
+      pathname === `orgs/${orgID}/dashboards/${dashboardID}/cell/${cellID}/edit`
     if (inVEOMode) {
       onEnableUpdatedTimeRangeInVEO()
     }
@@ -147,7 +149,6 @@ const mstp = (state: AppState) => {
     activeQuery,
     autoRefresh,
     isInCheckOverlay: getIsInCheckOverlay(state),
-    inVEOMode: isInVEOMode(state),
   }
 }
 
@@ -160,4 +161,4 @@ const mdtp = {
 export default connect<StateProps, DispatchProps>(
   mstp,
   mdtp
-)(TimeMachineQueries)
+)(withRouter(TimeMachineQueries))
