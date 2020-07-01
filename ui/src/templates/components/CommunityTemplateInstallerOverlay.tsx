@@ -1,6 +1,6 @@
 // Libraries
 import React, {PureComponent} from 'react'
-import {withRouter, WithRouterProps} from 'react-router-dom'
+import {withRouter, RouteComponentProps} from 'react-router-dom'
 
 // Components
 import {Alignment, Orientation, Overlay, Tabs} from '@influxdata/clockface'
@@ -31,7 +31,7 @@ enum Tab {
 
 type ActiveTab = Tab.IncludedResources | Tab.Readme
 
-type Props = OwnProps & WithRouterProps
+type Props = OwnProps & RouteComponentProps<{orgID: string}>
 
 class CommunityTemplateInstallerOverlayUnconnected extends PureComponent<
   Props,
@@ -103,6 +103,6 @@ class CommunityTemplateInstallerOverlayUnconnected extends PureComponent<
   }
 }
 
-export const CommunityTemplateInstallerOverlay = withRouter<OwnProps>(
+export const CommunityTemplateInstallerOverlay = withRouter(
   CommunityTemplateInstallerOverlayUnconnected
 )
