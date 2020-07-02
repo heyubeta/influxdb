@@ -11,6 +11,8 @@ import {getTimeRangeWithTimezone} from 'src/dashboards/selectors'
 import {reportSimpleQueryPerformanceDuration} from 'src/cloud/utils/reporting'
 import {setBuckets} from 'src/buckets/actions/creators'
 import {Action as BucketAction} from 'src/buckets/actions/creators'
+import {isFlagEnabled} from 'src/shared/utils/featureFlag'
+
 // Types
 import {
   Bucket,
@@ -421,6 +423,10 @@ export const selectBuilderFunction = (name: string) => (
   let newFunctions: BuilderFunctionsType[]
 
   if (functions.find(f => f.name === name)) {
+    if (isFlagEnabled('defaultAggregate') && functions.length == 1) {
+      // at least one function must be selected
+      return
+    }
     newFunctions = functions.filter(f => f.name !== name)
   } else if (activeTimeMachineID === 'alerting') {
     newFunctions = [{name}]

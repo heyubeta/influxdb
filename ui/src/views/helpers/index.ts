@@ -9,6 +9,9 @@ import {
 } from 'src/shared/constants/thresholds'
 import {DEFAULT_CHECK_EVERY} from 'src/alerting/constants'
 
+//Utils
+import {isFlagEnabled} from 'src/shared/utils/featureFlag'
+
 // Types
 import {
   Axis,
@@ -50,6 +53,16 @@ export function defaultViewQuery(): DashboardQuery {
 }
 
 export function defaultBuilderConfig(): BuilderConfig {
+  if (isFlagEnabled('defaultAggregate')) {
+    return {
+      buckets: [],
+      tags: [
+        {key: '_measurement', values: [], aggregateFunctionType: 'filter'},
+      ],
+      functions: [{name: 'mean'}],
+      aggregateWindow: {period: 'auto'},
+    }
+  }
   return {
     buckets: [],
     tags: [{key: '_measurement', values: [], aggregateFunctionType: 'filter'}],

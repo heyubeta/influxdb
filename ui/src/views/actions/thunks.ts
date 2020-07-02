@@ -11,6 +11,10 @@ import {
 import * as copy from 'src/shared/copy/notifications'
 import {viewSchema} from 'src/schemas'
 
+// Utils
+import {isFlagEnabled} from 'src/shared/utils/featureFlag'
+import {applyQueryBuilderRequirements} from 'src/utils/defaultAggregate'
+
 // Actions
 import {notify} from 'src/shared/actions/notifications'
 import {setActiveTimeMachine} from 'src/timeMachine/actions'
@@ -112,16 +116,23 @@ export const getViewAndResultsForVEO = (
       view = (await getViewAJAX(dashboardID, cellID)) as QueryView
     }
 
+    if (isFlagEnabled('defaultAggregate')) {
+      view = applyQueryBuilderRequirements(view)
+    }
+
     dispatch(
       setActiveTimeMachine(timeMachineID, {
         contextID: dashboardID,
         view,
       })
     )
+
     const queries = view.properties.queries.filter(({text}) => !!text.trim())
+
     if (!queries.length) {
       dispatch(setQueryResults(RemoteDataState.Done, [], null))
     }
+
     const queryText = queries.map(({text}) => text).join('')
     const queryID = hashCode(queryText)
     const files = get(

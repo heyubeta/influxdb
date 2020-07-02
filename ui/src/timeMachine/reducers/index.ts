@@ -5,6 +5,7 @@ import {produce} from 'immer'
 // Utils
 import {createView, defaultViewQuery} from 'src/views/helpers'
 import {isConfigValid, buildQuery} from 'src/timeMachine/utils/queryBuilder'
+import {isFlagEnabled} from 'src/shared/utils/featureFlag'
 
 // Constants
 import {AUTOREFRESH_DEFAULT} from 'src/shared/constants'
@@ -85,34 +86,40 @@ export interface TimeMachinesState {
   }
 }
 
-export const initialStateHelper = (): TimeMachineState => ({
-  timeRange: pastHourTimeRange,
-  autoRefresh: AUTOREFRESH_DEFAULT,
-  view: createView(),
-  draftQueries: [{...defaultViewQuery(), hidden: false}],
-  isViewingRawData: false,
-  isViewingVisOptions: false,
-  activeTab: 'queries',
-  activeQueryIndex: 0,
-  queryResults: initialQueryResultsState(),
-  queryBuilder: {
-    buckets: [],
-    bucketsStatus: RemoteDataState.NotStarted,
-    aggregateWindow: {period: 'auto'},
-    functions: [],
-    tags: [
-      {
-        aggregateFunctionType: 'filter',
-        keys: [],
-        keysSearchTerm: '',
-        keysStatus: RemoteDataState.NotStarted,
-        values: [],
-        valuesSearchTerm: '',
-        valuesStatus: RemoteDataState.NotStarted,
-      },
-    ],
-  },
-})
+export const initialStateHelper = (): TimeMachineState => {
+  const functions: Array<[{name: string}]> = isFlagEnabled('defaultAggregate')
+    ? [[{name: 'mean'}]]
+    : []
+
+  return {
+    timeRange: pastHourTimeRange,
+    autoRefresh: AUTOREFRESH_DEFAULT,
+    view: createView(),
+    draftQueries: [{...defaultViewQuery(), hidden: false}],
+    isViewingRawData: false,
+    isViewingVisOptions: false,
+    activeTab: 'queries',
+    activeQueryIndex: 0,
+    queryResults: initialQueryResultsState(),
+    queryBuilder: {
+      buckets: [],
+      bucketsStatus: RemoteDataState.NotStarted,
+      aggregateWindow: {period: 'auto'},
+      functions,
+      tags: [
+        {
+          aggregateFunctionType: 'filter',
+          keys: [],
+          keysSearchTerm: '',
+          keysStatus: RemoteDataState.NotStarted,
+          values: [],
+          valuesSearchTerm: '',
+          valuesStatus: RemoteDataState.NotStarted,
+        },
+      ],
+    },
+  }
+}
 
 export const initialState = (): TimeMachinesState => ({
   activeTimeMachineID: 'de',
@@ -1036,14 +1043,15 @@ const convertView = (
 const initialQueryBuilderState = (
   builderConfig: BuilderConfig
 ): QueryBuilderState => {
+  const defaultFunctions = initialStateHelper().queryBuilder.functions
+  const [defaultTag] = initialStateHelper().queryBuilder.tags
   return {
     buckets: builderConfig.buckets,
     bucketsStatus: RemoteDataState.NotStarted,
-    functions: [],
+    functions: [...defaultFunctions],
     aggregateWindow: {period: 'auto'},
     tags: builderConfig.tags.map(() => {
-      const [defaultTag] = initialStateHelper().queryBuilder.tags
-      return defaultTag
+      return {...defaultTag}
     }),
   }
 }
